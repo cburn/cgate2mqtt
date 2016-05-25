@@ -1,9 +1,10 @@
+import re
+
 from twisted.application import service
 from twisted.internet import reactor
 from twisted.logger import Logger
 from twisted.internet.endpoints import clientFromString
 from twisted.application.internet import ClientService
-
 
 from txcgate.service import CGateService
 import txcgate.command as command
@@ -19,6 +20,11 @@ class CGate(CGateService):
         def handleMessage(message):
             log.info(str(message))
             self.mqtt_service.publish("ha/cbus/raw/status", str(message))
+            if message.level != None and message.address != None:
+                self.mqtt_service.publish(
+                    "ha/cbus/" + message.address.lstrip('/') + '/value',
+                    str(message.level))
+
         self.setMessageHandler(handleMessage)
 
 
@@ -41,7 +47,7 @@ class MQTTService(ClientService):
         ClientService.stopService(self)
 
     def subscribe(self, *args):
-        self.protocol.subscribe("ha/cbus/raw/command", 0 )
+        self.protocol.subscribe("ha/cbus/#", 0 )
         self.protocol.setPublishHandler(self.onPublish)
 
     def connect(self, protocol):
@@ -68,6 +74,11 @@ class MQTTService(ClientService):
     def onPublish(self, topic, payload, qos, dup, retain, msgId):
         if topic == 'ha/cbus/raw/command':
             self.cgate.send(payload)
+        else:
+            address = re.match('ha/cbus/(.*)/value/set', topic)
+            if address:
+                if address.group(1).split('/')[2] in ('56'):
+                    self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=payload))
 
 
 application = service.Application("cgatemqtt")
