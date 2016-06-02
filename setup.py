@@ -7,5 +7,5 @@ setup(name="cgatemqtt",
       platforms=["any"],
       packages=find_packages(),
 
-      install_requires = ['txcgate'],
+      install_requires = ['txcgate', 'Twisted', 'twisted-mqtt'],
 )

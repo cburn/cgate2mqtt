@@ -18,7 +18,7 @@ class CGate(CGateService):
     def setMqttService(self, mqtt):
         self.mqtt_service = mqtt
         def handleMessage(message):
-            log.info(str(message))
+            log.debug(str(message))
             self.mqtt_service.publish("ha/cbus/raw/status", str(message))
             if message.level != None and message.address != None:
                 self.mqtt_service.publish(
