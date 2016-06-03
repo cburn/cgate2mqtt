@@ -22,7 +22,7 @@ class CGate(CGateService):
             self.mqtt_service.publish("ha/cbus/raw/status", str(message))
             if message.level != None and message.address != None:
                 self.mqtt_service.publish(
-                    "ha/cbus/" + message.address.lstrip('/') + '/value',
+                    'ha/cbus/' + message.address.lstrip('/') + '/value',
                     str(message.level))
 
         self.setMessageHandler(handleMessage)
@@ -47,12 +47,12 @@ class MQTTService(ClientService):
         ClientService.stopService(self)
 
     def subscribe(self, *args):
-        self.protocol.subscribe("ha/cbus/#", 0 )
+        self.protocol.subscribe("ha/cbus/#", 1 )
         self.protocol.setPublishHandler(self.onPublish)
 
     def connect(self, protocol):
-        self.protocol = protocol
         d = self.protocol.connect("CGateMqtt")
+        self.protocol.publisher.setWindowSize(5)
         d.addCallback(self.subscribe)
 
         def retryConnect():
