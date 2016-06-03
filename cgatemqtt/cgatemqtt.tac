@@ -60,7 +60,7 @@ class MQTTService(ClientService):
             self.whenConnected().addCallback(self.connectMqtt)
 
         def delayRetryConnect(reason):
-            info.debug("Disconnected {reason}", reason=reason)
+            log.debug("Disconnected {reason}", reason=reason)
             self.protocol = None
             reactor.callLater(1, retryConnect)
 
