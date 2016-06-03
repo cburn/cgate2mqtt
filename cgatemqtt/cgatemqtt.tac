@@ -51,7 +51,7 @@ class MQTTService(ClientService):
         self.protocol.setPublishHandler(self.onPublish)
 
     def connectMqtt(self, protocol):
-        log.info("connected {protocol}", protocol=protocol)
+        self.protocol=protocol
         d = self.protocol.connect("CGateMqtt")
         self.protocol.publisher.setWindowSize(5)
         d.addCallback(self.subscribe)
