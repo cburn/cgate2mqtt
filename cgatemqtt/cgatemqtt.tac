@@ -51,6 +51,7 @@ class MQTTService(ClientService):
         self.protocol.setPublishHandler(self.onPublish)
 
     def connectMqtt(self, protocol):
+        log.info("connected {protocol}", protocol=protocol)
         d = self.protocol.connect("CGateMqtt")
         self.protocol.publisher.setWindowSize(5)
         d.addCallback(self.subscribe)
@@ -59,6 +60,7 @@ class MQTTService(ClientService):
             self.whenConnected().addCallback(self.connectMqtt)
 
         def delayRetryConnect(reason):
+            info.debug("Disconnected {reason}", reason=reason)
             self.protocol = None
             reactor.callLater(1, retryConnect)
 
