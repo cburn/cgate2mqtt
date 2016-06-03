@@ -40,7 +40,7 @@ class MQTTService(ClientService):
 
     def startService(self):
         ClientService.startService(self)
-        self.whenConnected().addCallback(self.connect)
+        self.whenConnected().addCallback(self.connectMqtt)
 
     def stopService(self):
         self.protocol.disconnect()
@@ -65,8 +65,11 @@ class MQTTService(ClientService):
         self.protocol.setDisconnectCallback(delayRetryConnect)
 
     def publish(self, topic, message):
-        d = self.protocol.publish(topic=topic, qos=1, message=message)
-        d.addErrback(self.printError)
+        if self.protocol:
+            d = self.protocol.publish(topic=topic, qos=1, message=message)
+            d.addErrback(self.printError)
+        else:
+            info.debug('Not connected to MQTT')
 
     def printError(self, *args):
         log.debug("args={args!s}", args=args)
