@@ -50,13 +50,13 @@ class MQTTService(ClientService):
         self.protocol.subscribe("ha/cbus/#", 1 )
         self.protocol.setPublishHandler(self.onPublish)
 
-    def connect(self, protocol):
+    def connectMqtt(self, protocol):
         d = self.protocol.connect("CGateMqtt")
         self.protocol.publisher.setWindowSize(5)
         d.addCallback(self.subscribe)
 
         def retryConnect():
-            self.whenConnected().addCallback(self.connect)
+            self.whenConnected().addCallback(self.connectMqtt)
 
         def delayRetryConnect(reason):
             self.protocol = None
