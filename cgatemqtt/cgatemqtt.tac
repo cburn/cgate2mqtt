@@ -56,7 +56,8 @@ class MQTTService(ClientService):
     def connectMqtt(self, protocol):
         self.protocol=protocol
         d = self.protocol.connect("CGateMqtt")
-        self.protocol.publisher.setWindowSize(5)
+        self.protocol.publisher.setWindowSize(16)
+        self.protocol.subscriber.setWindowSize(16)
         d.addCallback(self.subscribe)
 
         def retryConnect():
