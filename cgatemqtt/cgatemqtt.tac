@@ -72,7 +72,7 @@ class MQTTService(ClientService):
 
     def publish(self, topic, message):
         if self.protocol:
-            d = self.protocol.publish(topic=topic, qos=1, message=message)
+            d = self.protocol.publish(topic=topic, qos=1, message=message, retain=True)
             d.addErrback(self.printError)
         else:
             info.debug('Not connected to MQTT')
