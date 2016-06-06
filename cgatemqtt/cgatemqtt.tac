@@ -89,8 +89,8 @@ class MQTTService(ClientService):
                 if address.group(1).split('/')[2] in ('56'):
                     self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=payload))
 
-STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
-COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
+STATUS_EP = clientFromString(reactor, "tcp:cgate:20025")
+COMMAND_EP = clientFromString(reactor, "tcp:cgate:20023")
 
 application = service.Application("cgatemqtt")
 service.IProcess(application).processName = "cgatemqtt"
@@ -100,7 +100,7 @@ cgate_service = CGate(STATUS_EP, COMMAND_EP)
 cgate_service.setName('cgate')
 cgate_service.setServiceParent(serviceCollection)
 
-mqtt_service = MQTTService(clientFromString(reactor, "tcp:localhost:1883"),
+mqtt_service = MQTTService(clientFromString(reactor, "tcp:mosquitto:1883"),
     MQTTFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER))
 mqtt_service.setName('mqtt')
 mqtt_service.setServiceParent(serviceCollection)
