@@ -8,13 +8,20 @@ import cgatemqtt
 
 import sys
 
+logLevelFilterPredicate = LogLevelFilterPredicate(defaultLogLevel=LogLevel.info)
 
 class Options(usage.Options):
     optParameters = [
-        ['loglevel', 'l', 'info']
+        ['loglevel', 'l', 'info', 'Set the logging level.']
     ]
 
 def makeService(config):
+    global logLevelFilterPredicate
+    
+    logLevelFilterPredicate.setLogLevelForNamespace(
+        namespace='CGateMQTT',
+        level=LogLevel.levelWithName(config['loglevel']))
+
     STATUS_EP = clientFromString(reactor, "tcp:cgate:20025")
     COMMAND_EP = clientFromString(reactor, "tcp:cgate:20023")
 
@@ -35,8 +42,5 @@ def makeService(config):
     return application
 
 def FilteringLog():
-    config = Options
-
-    isLevel = LogLevelFilterPredicate(LogLevel.levelWithName(config['loglevel']))
-    lo = FilteringLogObserver(observer=textFileLogObserver(sys.stdout), predicates=[isLevel])
+    lo = FilteringLogObserver(observer=textFileLogObserver(sys.stdout), predicates=[logLevelFilterPredicate])
     return lo
