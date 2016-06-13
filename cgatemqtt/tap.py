@@ -11,7 +11,7 @@ import sys
 
 logLevelFilterPredicate = LogLevelFilterPredicate(defaultLogLevel=LogLevel.info)
 logStdout = textFileLogObserver(sys.stdout)
-logSyslog = syslog.SyslogObserver()
+logSyslog = syslog.SyslogObserver('cgatemqqt')
 logStdoutOrSyslog = logStdout
 
 class Options(usage.Options):
