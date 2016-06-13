@@ -11,7 +11,7 @@ import sys
 
 logLevelFilterPredicate = LogLevelFilterPredicate(defaultLogLevel=LogLevel.info)
 
-logSyslog = LegacyLogObserverWrapper(syslog.SyslogObserver('cgatemqqt'))
+logSyslog = LegacyLogObserverWrapper(syslog.SyslogObserver('cgatemqqt').emit)
 
 
 class Options(usage.Options):
