@@ -17,9 +17,12 @@ class Options(usage.Options):
 
 def makeService(config):
     global logLevelFilterPredicate
-    
+
     logLevelFilterPredicate.setLogLevelForNamespace(
         namespace='CGateMQTT',
+        level=LogLevel.levelWithName(config['loglevel']))
+    logLevelFilterPredicate.setLogLevelForNamespace(
+        namespace='mqtt',
         level=LogLevel.levelWithName(config['loglevel']))
 
     STATUS_EP = clientFromString(reactor, "tcp:cgate:20025")
