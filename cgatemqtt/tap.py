@@ -53,5 +53,5 @@ def FilteringStdout():
     return lo
 
 def FilteringSyslog():
-    lo = FilteringLogObserver(observer=syslog.SyslogObserver('cgatemqqt'), predicates=[logLevelFilterPredicate])
+    lo = FilteringLogObserver(observer=syslog.SyslogObserver('cgatemqqt').emit, predicates=[logLevelFilterPredicate])
     return lo
