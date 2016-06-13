@@ -35,8 +35,7 @@ def makeService(config):
     return application
 
 def FilteringLog():
-    config = Options()
-    config.parseOptions()
+    config = Options
 
     isLevel = LogLevelFilterPredicate(LogLevel.levelWithName(config['loglevel']))
     lo = FilteringLogObserver(observer=textFileLogObserver(sys.stdout), predicates=[isLevel])
