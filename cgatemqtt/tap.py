@@ -2,7 +2,7 @@ from twisted.python import usage
 from twisted.application import service
 from twisted.internet import reactor
 from twisted.internet.endpoints import clientFromString
-from twisted.logger import LogLevel, FilteringLogObserver, textFileLogObserver, LogLevelFilterPredicate
+from twisted.logger import LogLevel, FilteringLogObserver, textFileLogObserver, LogLevelFilterPredicate, LegacyLogObserverWrapper
 from twisted.python import syslog
 from mqtt.client.factory import MQTTFactory
 import cgatemqtt
@@ -10,6 +10,9 @@ import cgatemqtt
 import sys
 
 logLevelFilterPredicate = LogLevelFilterPredicate(defaultLogLevel=LogLevel.info)
+
+logSyslog = LegacyLogObserverWrapper(syslog.SyslogObserver('cgatemqqt'))
+
 
 class Options(usage.Options):
     optParameters = [
@@ -53,5 +56,5 @@ def FilteringStdout():
     return lo
 
 def FilteringSyslog():
-    lo = FilteringLogObserver(observer=syslog.SyslogObserver('cgatemqqt').emit, predicates=[logLevelFilterPredicate])
+    lo = FilteringLogObserver(observer=logSyslog, predicates=[logLevelFilterPredicate])
     return lo
