@@ -113,5 +113,5 @@ mqtt_service.setCGateService(cgate_service)
 
 if filterlog:
     isLevel = LogLevelFilterPredicate(loglevel)
-    lo = FilteringLogObserver(observer=LegacyLogObserverWrapper(syslog.SyslogObserver('cgatemqqt').emit), predicates=[isLevel])
+    lo = FilteringLogObserver(observer=LegacyLogObserverWrapper(syslog.SyslogObserver('cgatemqtt').emit), predicates=[isLevel])
     application.setComponent(ILogObserver, lo)
