@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from twisted.logger import Logger
 from twisted.internet.endpoints import clientFromString
 from twisted.application.internet import ClientService
-from twisted.logger import LogLevel, FilteringLogObserver, textFileLogObserver, LogLevelFilterPredicate, LegacyLogObserverWrapper
+from twisted.logger import LogLevel, ILogObserver, FilteringLogObserver, textFileLogObserver, LogLevelFilterPredicate, LegacyLogObserverWrapper
 
 from txcgate.service import CGateService
 import txcgate.command as command
