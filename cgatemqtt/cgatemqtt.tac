@@ -11,6 +11,8 @@ import txcgate.command as command
 
 from mqtt.client.factory import MQTTFactory
 
+log = Logger(namespace='cgatemqtt')
+
 class CGate(CGateService):
     def setMqttService(self, mqtt):
         self.mqtt_service = mqtt
