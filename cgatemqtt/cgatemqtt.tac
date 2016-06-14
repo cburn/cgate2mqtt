@@ -5,6 +5,7 @@ from twisted.internet import reactor
 from twisted.logger import Logger
 from twisted.internet.endpoints import clientFromString
 from twisted.application.internet import ClientService
+from twisted.logger import LogLevel, FilteringLogObserver, textFileLogObserver, LogLevelFilterPredicate, LegacyLogObserverWrapper
 
 from txcgate.service import CGateService
 import txcgate.command as command
@@ -12,7 +13,8 @@ import txcgate.command as command
 from mqtt.client.factory import MQTTFactory
 
 log = Logger(namespace='CGateMQTT')
-
+loglevel = LogLevel.info
+filterlog = True
 
 class CGate(CGateService):
     def setMqttService(self, mqtt):
@@ -107,3 +109,8 @@ mqtt_service.setServiceParent(serviceCollection)
 
 cgate_service.setMqttService(mqtt_service)
 mqtt_service.setCGateService(cgate_service)
+
+if filterlog:
+    isLevel = LogLevelFilterPredicate(loglevel)
+    lo = FilteringLogObserver(observer=textFileLogObserver(sys.stdout), predicates=[isLevel])
+    application.setComponent(ILogObserver, lo)
