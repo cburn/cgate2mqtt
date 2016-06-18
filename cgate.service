@@ -1,0 +1,12 @@
+[Unit]
+Description=Clipsal CGate
+Wants=dev-cbus.device ser2sock.service
+After=dev-cbus.device ser2sock.service
+
+[Service]
+WorkingDirectory=/opt/cbus
+ExecStart=java -Djava.library.path=. -DSERIAL_PORT_LIST=/dev/cbus -jar cgate.jar
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
