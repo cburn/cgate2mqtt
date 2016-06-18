@@ -25,7 +25,7 @@ class CGate(CGateService):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
                     self.mqtt_service.publish(
-                        'cbus/status' + message.address.lstrip('/'),
+                        'cbus/status/' + message.address.lstrip('/'),
                         str(message.level))
             else:
                 log.debug("Received unhandled command: {command}", command=message)
