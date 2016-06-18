@@ -22,10 +22,10 @@ class CGate(CGateService):
         def handleMessage(message):
             log.debug(str(message))
             if isinstance(message, command.Command):
-                self.mqtt_service.publish("ha/cbus/raw/status", str(message))
+                self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
                     self.mqtt_service.publish(
-                        'ha/cbus/' + message.address.lstrip('/') + '/value',
+                        'cbus/status' + message.address.lstrip('/'),
                         str(message.level))
             else:
                 log.debug("Received unhandled command: {command}", command=message)
@@ -52,12 +52,13 @@ class MQTTService(ClientService):
         ClientService.stopService(self)
 
     def subscribe(self, *args):
-        self.protocol.subscribe("ha/cbus/#", 1 )
+        self.protocol.subscribe("cbus/set/#", 2 )
+        self.protocol.subscribe("cbus/command", 2 )
         self.protocol.setPublishHandler(self.onPublish)
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
-        d = self.protocol.connect("CGateMqtt")
+        d = self.protocol.connect("CGateMqtt", willTopic="cbus/connected", willMessage="0", willQOS=2, willRetain=True)
         self.protocol.publisher.setWindowSize(16)
         self.protocol.subscriber.setWindowSize(16)
         d.addCallback(self.subscribe)
@@ -74,7 +75,7 @@ class MQTTService(ClientService):
 
     def publish(self, topic, message):
         if self.protocol:
-            d = self.protocol.publish(topic=topic, qos=1, message=message, retain=True)
+            d = self.protocol.publish(topic=topic, qos=2, message=message, retain=True)
             d.addErrback(self.printError)
         else:
             info.debug('Not connected to MQTT')
@@ -83,10 +84,10 @@ class MQTTService(ClientService):
         log.debug("args={args!s}", args=args)
 
     def onPublish(self, topic, payload, qos, dup, retain, msgId):
-        if topic == 'ha/cbus/raw/command':
+        if topic == 'cbus/command':
             self.cgate.send(payload)
-        else:
-            address = re.match('ha/cbus/(.*)/value/set', topic)
+        else: # cbus/set/home/254/56/1
+            address = re.match('cbus/set/(.*)', topic)
             if address:
                 if address.group(1).split('/')[2] in ('56'):
                     self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=payload))
