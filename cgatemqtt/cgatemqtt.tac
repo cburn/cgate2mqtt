@@ -90,7 +90,7 @@ class MQTTService(ClientService):
             address = re.match('cbus/set/(.*)', topic)
             if address:
                 if address.group(1).split('/')[2] in ('56'):
-                    self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=payload))
+                    self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=int(float(payload))))
 
 STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
 COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
