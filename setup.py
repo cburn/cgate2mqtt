@@ -1,5 +1,5 @@
 from setuptools import find_packages, setup
-setup(name="cgatemqtt",
+setup(name="cgate2mqtt",
       version="0.1.0",
       description="Clipsal C-Gate to MQTT bridge",
       author="Chris Burn",

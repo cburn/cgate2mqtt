@@ -12,7 +12,7 @@ import txcgate.command as command
 
 from mqtt.client.factory import MQTTFactory
 
-log = Logger(namespace='CGateMQTT')
+log = Logger(namespace='CGate2MQTT')
 loglevel = LogLevel.info
 filterlog = True
 
@@ -58,7 +58,7 @@ class MQTTService(ClientService):
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
-        d = self.protocol.connect("CGateMqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
+        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
         self.protocol.publisher.setWindowSize(16)
         self.protocol.subscriber.setWindowSize(16)
         d.addCallback(self.subscribe)
@@ -95,8 +95,8 @@ class MQTTService(ClientService):
 STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
 COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
 
-application = service.Application("cgatemqtt")
-service.IProcess(application).processName = "cgatemqtt"
+application = service.Application("cgate2mqtt")
+service.IProcess(application).processName = "cgate2mqtt"
 serviceCollection = service.IServiceCollection(application)
 
 cgate_service = CGate(STATUS_EP, COMMAND_EP)

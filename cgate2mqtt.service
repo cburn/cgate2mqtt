@@ -1,0 +1,11 @@
+[Unit]
+Description=Clipsal CGate to MQTT Bridge
+Wants=cgate.service mosquitto.service
+
+[Service]
+ExecStart=/usr/local/bin/twistd --python=/usr/local/lib/cgate2mqtt.tac --nodaemon --pidfile=/var/run/cgate2mqtt.pid --prefix=cgate2mqtt
+PIDFile=/var/run/cgate2mqtt.pid
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
