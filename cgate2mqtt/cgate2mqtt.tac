@@ -25,8 +25,11 @@ class CGate(CGateService):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
                     self.mqtt_service.publish(
-                        'cbus/status/' + message.address.lstrip('/'),
+                        'cbus/status/' + message.address.lstrip('/') + '/level',
                         str(message.level))
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/state',
+                        '1' if message.level > 0 else '0')
             else:
                 log.debug("Received unhandled command: {command}", command=message)
 
@@ -60,7 +63,6 @@ class MQTTService(ClientService):
         self.protocol=protocol
         d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
         self.protocol.setWindowSize(16)
-#        self.protocol.subscriber.setWindowSize(16)
         d.addCallback(self.subscribe)
 
         def retryConnect():
@@ -87,11 +89,16 @@ class MQTTService(ClientService):
         if topic == 'cbus/command':
             self.cgate.send(payload)
         else: # cbus/set/home/254/56/1
-            address = re.match('cbus/set/(.*)', topic)
+            address = re.match('cbus/set/(.*)/level', topic)
             if address:
                 if address.group(1).split('/')[2] in ('56'):
                     self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=int(float(payload))))
-
+            else:
+                address = re.match('cbus/set/(.*)/state', topic)
+                if address:
+                    if address.group(1).split('/')[2] in ('56'):
+                        self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=255 if int(payload) else 0))
+                
 STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
 COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
 
