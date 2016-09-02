@@ -60,6 +60,7 @@ class MQTTService(ClientService):
         self.protocol.setPublishHandler(self.onPublish)
 
     def connectMqtt(self, protocol):
+	log.debug("Got protocol connection")
         self.protocol=protocol
         d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
         self.protocol.setWindowSize(16)
@@ -80,7 +81,7 @@ class MQTTService(ClientService):
             d = self.protocol.publish(topic=topic, qos=2, message=message, retain=True)
             d.addErrback(self.printError)
         else:
-            info.debug('Not connected to MQTT')
+            log.debug('Not connected to MQTT')
 
     def printError(self, *args):
         log.debug("args={args!s}", args=args)
