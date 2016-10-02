@@ -14,9 +14,13 @@ from mqtt.client.factory import MQTTFactory
 
 log = Logger(namespace='CGate2MQTT')
 loglevel = LogLevel.info
-filterlog = True
+filterlog = False
 
 class CGate(CGateService):
+    def __init__(self, *args, **kwargs):
+        self.levels = {}
+        CGateService.__init__(self, *args, **kwargs)
+
     def setMqttService(self, mqtt):
         self.mqtt_service = mqtt
         def handleMessage(message):
@@ -24,6 +28,8 @@ class CGate(CGateService):
             if isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
+                    log.debug("Storing {address} as {level}".format(address=message.address.lstrip('/'), level=message.level))
+                    self.levels[message.address.lstrip('/')] = message.level
                     self.mqtt_service.publish(
                         'cbus/status/' + message.address.lstrip('/') + '/level',
                         str(message.level))
@@ -35,6 +41,16 @@ class CGate(CGateService):
 
         self.setMessageHandler(handleMessage)
 
+    def ramp(self, address, level):
+        self.send('RAMP //{address} {level}'.format(address=address, level=int(round(float(level)))))
+
+    def state(self, address, state):
+        if not state:
+            self.send('OFF //{address}'.format(address=address))
+        elif self.levels.get(address, 0) == 0:
+            self.send('ON //{address}'.format(address=address))
+        else:
+            log.debug("Off already")
 
 class MQTTService(ClientService):
     def __init__(self, *args, **kwargs):
@@ -60,7 +76,6 @@ class MQTTService(ClientService):
         self.protocol.setPublishHandler(self.onPublish)
 
     def connectMqtt(self, protocol):
-	log.debug("Got protocol connection")
         self.protocol=protocol
         d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
         self.protocol.setWindowSize(16)
@@ -93,12 +108,12 @@ class MQTTService(ClientService):
             address = re.match('cbus/set/(.*)/level', topic)
             if address:
                 if address.group(1).split('/')[2] in ('56'):
-                    self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=int(round(float(payload)))))
+                    self.cgate.ramp(address.group(1), payload)
             else:
                 address = re.match('cbus/set/(.*)/state', topic)
                 if address:
                     if address.group(1).split('/')[2] in ('56'):
-                        self.cgate.send('RAMP //{address} {level}'.format(address=address.group(1), level=255 if int(payload) else 0))
+                        self.cgate.state(address.group(1), bool(int(payload)))
 
 STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
 COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
