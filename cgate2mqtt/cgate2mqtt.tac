@@ -28,7 +28,7 @@ class CGate(CGateService):
             if isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
-                    log.debug("Storing {message.address.lstrip('/')} as {message.level}")
+                    log.debug("Storing {address} as {level}".format(address=message.address.lstrip('/'), level=message.level))
                     self.levels[message.address.lstrip('/')] = message.level
                     self.mqtt_service.publish(
                         'cbus/status/' + message.address.lstrip('/') + '/level',
