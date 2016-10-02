@@ -49,7 +49,7 @@ class CGate(CGateService):
             self.send('OFF //{address}'.format(address=address))
         elif self.levels.get(address, 0) == 0:
             self.send('ON //{address}'.format(address=address))
-        else
+        else:
             log.debug("Off already")
 
 class MQTTService(ClientService):
