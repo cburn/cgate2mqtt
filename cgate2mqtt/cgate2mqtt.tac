@@ -111,9 +111,6 @@ serviceCollection = service.IServiceCollection(application)
 cgate_service = CGate(STATUS_EP, COMMAND_EP)
 cgate_service.setName('cgate')
 cgate_service.setServiceParent(serviceCollection)
-def getLevels(protocol):
-    cgate_service.getLevel('254/56/*')
-cgate_service.whenConnected.addCallback(getLevels)
 
 mqtt_service = MQTTService(clientFromString(reactor, "tcp:localhost:1883"),
     MQTTFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER))
