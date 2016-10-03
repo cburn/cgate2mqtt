@@ -14,13 +14,9 @@ from mqtt.client.factory import MQTTFactory
 
 log = Logger(namespace='CGate2MQTT')
 loglevel = LogLevel.info
-filterlog = False
+filterlog = True
 
 class CGate(CGateService):
-    def __init__(self, *args, **kwargs):
-        self.levels = {}
-        CGateService.__init__(self, *args, **kwargs)
-
     def setMqttService(self, mqtt):
         self.mqtt_service = mqtt
         def handleMessage(message):
@@ -28,8 +24,6 @@ class CGate(CGateService):
             if isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
-                    log.debug("Storing {address} as {level}".format(address=message.address.lstrip('/'), level=message.level))
-                    self.levels[message.address.lstrip('/')] = message.level
                     self.mqtt_service.publish(
                         'cbus/status/' + message.address.lstrip('/') + '/level',
                         str(message.level))
@@ -39,18 +33,7 @@ class CGate(CGateService):
             else:
                 log.debug("Received unhandled command: {command}", command=message)
 
-        self.setMessageHandler(handleMessage)
-
-    def ramp(self, address, level):
-        self.send('RAMP //{address} {level}'.format(address=address, level=int(round(float(level)))))
-
-    def state(self, address, state):
-        if not state:
-            self.send('OFF //{address}'.format(address=address))
-        elif self.levels.get(address, 0) == 0:
-            self.send('ON //{address}'.format(address=address))
-        else:
-            log.debug("Off already")
+        self.setStatusMessageHandler(handleMessage)
 
 class MQTTService(ClientService):
     def __init__(self, *args, **kwargs):
@@ -104,16 +87,19 @@ class MQTTService(ClientService):
     def onPublish(self, topic, payload, qos, dup, retain, msgId):
         if topic == 'cbus/command':
             self.cgate.send(payload)
-        else: # cbus/set/home/254/56/1
+        else: # cbus/set/HOME/254/56/1/level
             address = re.match('cbus/set/(.*)/level', topic)
             if address:
                 if address.group(1).split('/')[2] in ('56'):
-                    self.cgate.ramp(address.group(1), payload)
+                    self.cgate.ramp('//' + address.group(1), payload)
             else:
                 address = re.match('cbus/set/(.*)/state', topic)
                 if address:
                     if address.group(1).split('/')[2] in ('56'):
-                        self.cgate.state(address.group(1), bool(int(payload)))
+                        if bool(int(payload)):
+                            self.cgate.on('//' + address.group(1))
+                        else:
+                            self.cgate.off('//' + address.group(1))
 
 STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
 COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
@@ -125,6 +111,9 @@ serviceCollection = service.IServiceCollection(application)
 cgate_service = CGate(STATUS_EP, COMMAND_EP)
 cgate_service.setName('cgate')
 cgate_service.setServiceParent(serviceCollection)
+def getLevels(protocol):
+    cgate_service.getLevel('254/56/*')
+cgate_service.whenConnected.addCallback(getLevels)
 
 mqtt_service = MQTTService(clientFromString(reactor, "tcp:localhost:1883"),
     MQTTFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER))
