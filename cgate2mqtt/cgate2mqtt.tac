@@ -14,7 +14,7 @@ from mqtt.client.factory import MQTTFactory
 
 log = Logger(namespace='CGate2MQTT')
 loglevel = LogLevel.info
-filterlog = False
+filterlog = True
 
 class CGate(CGateService):
     def setMqttService(self, mqtt):
