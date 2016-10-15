@@ -92,6 +92,8 @@ class MQTTService(ClientService):
             if address:
                 if address.group(1).split('/')[2] in ('56'):
                     self.cgate.ramp('//' + address.group(1), payload)
+                elif address.group(1).split('/')[2] in ('202'):
+                    self.cgate.trigger_event('//' + address.group(1), payload)
             else:
                 address = re.match('cbus/set/(.*)/state', topic)
                 if address:
