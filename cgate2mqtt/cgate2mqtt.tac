@@ -56,7 +56,6 @@ class MQTTService(ClientService):
     def subscribe(self, *args):
         self.protocol.subscribe("cbus/set/#", 2 )
         self.protocol.subscribe("cbus/command", 2 )
-        self.protocol.setPublishHandler(self.onPublish)
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
@@ -72,7 +71,8 @@ class MQTTService(ClientService):
             self.protocol = None
             reactor.callLater(1, retryConnect)
 
-        self.protocol.setDisconnectCallback(delayRetryConnect)
+        self.protocol.onDisconnection = delayRetryConnect
+        self.protocol.onPublish = self.onPublish
 
     def publish(self, topic, message):
         if self.protocol:
