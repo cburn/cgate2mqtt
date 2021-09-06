@@ -15,12 +15,28 @@ from mqtt.client.factory import MQTTFactory
 log = Logger(namespace='CGate2MQTT')
 loglevel = LogLevel.info
 filterlog = True
+alarmstate = [
+    'disarmed', 
+    'armed_away', 
+    'armed_night', 
+    'armed_day'
+    ]
 
 class CGate(CGateService):
     def setMqttService(self, mqtt):
         self.mqtt_service = mqtt
         def handleMessage(message):
             log.debug(str(message))
+            if isinstance(message, command.SystemArmed):
+                self.mqtt_service.publish("comfort/target", alarmstate[level])
+                reactor.callLater(0.5, self.mqtt_service.publish, 
+                    ["comfort/state", alarmstate[level]])
+            if isinstance(message, command.ExitDelay):
+                self.mqtt_service.publish("comfort/target", alarmstate[1])
+                self.mqtt_service.publish('comfort/state', 'arming')
+            if isinstance(message, command.EntryDelay):
+                self.mqtt_service.publish("comfort/target", alarmstate[0])
+                self.mqtt_service.publish("comfort/state", 'disarming')
             if isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
