@@ -28,9 +28,9 @@ class CGate(CGateService):
         def handleMessage(message):
             log.debug(str(message))
             if isinstance(message, command.SystemArmed):
-                self.mqtt_service.publish("comfort/target", alarmstate[level])
+                self.mqtt_service.publish("comfort/target", alarmstate[message.level])
                 reactor.callLater(0.5, self.mqtt_service.publish, 
-                    ["comfort/state", alarmstate[level]])
+                    ["comfort/state", alarmstate[message.level]])
             if isinstance(message, command.ExitDelay):
                 self.mqtt_service.publish("comfort/target", alarmstate[1])
                 self.mqtt_service.publish('comfort/state', 'arming')
