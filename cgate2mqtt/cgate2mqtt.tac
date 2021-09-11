@@ -37,6 +37,8 @@ class CGate(CGateService):
             if isinstance(message, command.EntryDelay):
                 self.mqtt_service.publish("comfort/target", alarmstate[0])
                 self.mqtt_service.publish("comfort/state", 'disarming')
+            if isinstance(message, command.AlarmOn):
+                self.mqtt_service.publish("comfort/state", 'triggered')
             if isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
