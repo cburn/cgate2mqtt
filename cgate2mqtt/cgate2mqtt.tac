@@ -121,8 +121,8 @@ class MQTTService(ClientService):
                         else:
                             self.cgate.off('//' + address.group(1))
 
-STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
-COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
+STATUS_EP = clientFromString(reactor, "tcp:piha:20025")
+COMMAND_EP = clientFromString(reactor, "tcp:piha:20023")
 
 application = service.Application("cgate2mqtt")
 service.IProcess(application).processName = "cgate2mqtt"
@@ -132,7 +132,7 @@ cgate_service = CGate(STATUS_EP, COMMAND_EP)
 cgate_service.setName('cgate')
 cgate_service.setServiceParent(serviceCollection)
 
-mqtt_service = MQTTService(clientFromString(reactor, "tcp:localhost:1883"),
+mqtt_service = MQTTService(clientFromString(reactor, "tcp:core-mosquitto:1883"),
     MQTTFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER))
 mqtt_service.setName('mqtt')
 mqtt_service.setServiceParent(serviceCollection)
