@@ -77,7 +77,7 @@ class MQTTService(ClientService):
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
-        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True, username="addons", password="zoh8aegieMoh8thee0di4UozuJaPai2Fogh8hah9pohgaiphuaQuai8xiesi8eef")
+        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True, username="mqtt_user", password="mqtt_pass")
         self.protocol.setWindowSize(16)
         d.addCallback(self.subscribe)
 
