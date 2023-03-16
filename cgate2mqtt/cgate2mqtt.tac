@@ -121,8 +121,8 @@ class MQTTService(ClientService):
                         else:
                             self.cgate.off('//' + address.group(1))
 
-STATUS_EP = clientFromString(reactor, "tcp:piha:20025")
-COMMAND_EP = clientFromString(reactor, "tcp:piha:20023")
+STATUS_EP = clientFromString(reactor, "tcp:piha.cburn.freeddns.org:20025")
+COMMAND_EP = clientFromString(reactor, "tcp:piha.cburn.freeddns.org:20023")
 
 application = service.Application("cgate2mqtt")
 service.IProcess(application).processName = "cgate2mqtt"
