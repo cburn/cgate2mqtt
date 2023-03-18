@@ -130,8 +130,6 @@ MQTT_PORT = os.getenv("MQTT_PORT", 1883)
 MQTT_USER = os.getenv("MQTT_USER", None)
 MQTT_PASS = os.getenv("MQTT_PASS", None)
 
-print(CGATE_HOST, MQTT_HOST)
-
 STATUS_EP = clientFromString(reactor, "tcp:{}:20025".format(CGATE_HOST))
 COMMAND_EP = clientFromString(reactor, "tcp:{}:20023".format(CGATE_HOST))
 
