@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 
 from twisted.application import service
 from twisted.internet import reactor
@@ -7,6 +8,7 @@ from twisted.logger import Logger
 from twisted.internet.endpoints import clientFromString
 from twisted.application.internet import ClientService
 from twisted.logger import LogLevel, ILogObserver, FilteringLogObserver, LogLevelFilterPredicate, textFileLogObserver
+
 from txcgate.service import CGateService
 import txcgate.command as command
 
@@ -77,7 +79,7 @@ class MQTTService(ClientService):
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
-        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
+        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True, username=MQTT_USER, password=MQTT_PASS)
         self.protocol.setWindowSize(16)
         d.addCallback(self.subscribe)
 
@@ -121,8 +123,15 @@ class MQTTService(ClientService):
                         else:
                             self.cgate.off('//' + address.group(1))
 
-STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
-COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
+
+CGATE_HOST = os.getenv("CGATE_HOST", "localhost")
+MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
+MQTT_PORT = os.getenv("MQTT_PORT", 1883)
+MQTT_USER = os.getenv("MQTT_USER", None)
+MQTT_PASS = os.getenv("MQTT_PASS", None)
+
+STATUS_EP = clientFromString(reactor, "tcp:{}:20025".format(CGATE_HOST))
+COMMAND_EP = clientFromString(reactor, "tcp:{}:20023".format(CGATE_HOST))
 
 application = service.Application("cgate2mqtt")
 service.IProcess(application).processName = "cgate2mqtt"
@@ -132,7 +141,7 @@ cgate_service = CGate(STATUS_EP, COMMAND_EP)
 cgate_service.setName('cgate')
 cgate_service.setServiceParent(serviceCollection)
 
-mqtt_service = MQTTService(clientFromString(reactor, "tcp:localhost:1883"),
+mqtt_service = MQTTService(clientFromString(reactor, "tcp:{}:{}".format(MQTT_HOST, MQTT_PORT)),
     MQTTFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER))
 mqtt_service.setName('mqtt')
 mqtt_service.setServiceParent(serviceCollection)
