@@ -79,7 +79,7 @@ class MQTTService(ClientService):
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
-        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=0, willRetain=True, username=MQTT_USER, password=MQTT_PASS, keepalive=60)
+        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=1, willRetain=True, username=MQTT_USER, password=MQTT_PASS, keepalive=60)
         self.protocol.setWindowSize(16)
         d.addCallback(self.subscribe)
 
@@ -96,7 +96,7 @@ class MQTTService(ClientService):
 
     def publish(self, topic, message):
         if self.protocol:
-            d = self.protocol.publish(topic=topic, qos=0, message=message, retain=True)
+            d = self.protocol.publish(topic=topic, qos=1, message=message, retain=True)
             d.addErrback(self.printError)
         else:
             log.debug('Not connected to MQTT')
