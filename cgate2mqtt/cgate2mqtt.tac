@@ -1,6 +1,7 @@
 import re
 import sys
 import os
+import json
 
 from twisted.application import service
 from twisted.internet import reactor
@@ -33,15 +34,31 @@ class CGate(CGateService):
                 self.mqtt_service.publish("comfort/target", alarmstate[message.level])
                 reactor.callLater(0.5, self.mqtt_service.publish, 
                     "comfort/state", alarmstate[message.level])
-            if isinstance(message, command.ExitDelay):
+            elif isinstance(message, command.ExitDelay):
                 self.mqtt_service.publish("comfort/target", alarmstate[1])
                 self.mqtt_service.publish('comfort/state', 'arming')
-            if isinstance(message, command.EntryDelay):
+            elif isinstance(message, command.EntryDelay):
                 self.mqtt_service.publish("comfort/target", alarmstate[0])
                 self.mqtt_service.publish("comfort/state", 'disarming')
-            if isinstance(message, command.AlarmOn):
+            elif isinstance(message, command.AlarmOn):
                 self.mqtt_service.publish("comfort/state", 'triggered')
-            if isinstance(message, command.Command):
+            elif isinstance(message, command.Ramp):
+                self.mqtt_service.publish("cbus/status/command", str(message))
+                if message.level != None and message.address != None:
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/level',
+                        str(message.level))
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/state',
+                        '1' if message.level > 0 else '0')
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/json',
+                        json.dumps(
+                            {"brightness": message.level, 
+                            "color_mode": 'brightness', 
+                            "state": 'ON' if message.level > 0 else 'OFF',
+                            "transition": message.time})
+            elif isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
                     self.mqtt_service.publish(
@@ -122,7 +139,12 @@ class MQTTService(ClientService):
                             self.cgate.on('//' + address.group(1))
                         else:
                             self.cgate.off('//' + address.group(1))
-
+            else:
+                address = re.match('cbus/set/(.*)/json', topic)
+                if address:
+                    if address.group(1).split('/')[2] in ('56'):
+                        data = json.loads(payload)
+                        self.cgate.ramp('//' + address.group(1), data['brightness'], data['transition'])
 
 CGATE_HOST = os.getenv("CGATE_HOST", "localhost")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
