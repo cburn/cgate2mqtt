@@ -57,7 +57,7 @@ class CGate(CGateService):
                             {"brightness": message.level, 
                             "color_mode": 'brightness', 
                             "state": 'ON' if message.level > 0 else 'OFF',
-                            "transition": message.time})
+                            "transition": message.time}))
             elif isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
@@ -139,12 +139,12 @@ class MQTTService(ClientService):
                             self.cgate.on('//' + address.group(1))
                         else:
                             self.cgate.off('//' + address.group(1))
-            else:
-                address = re.match('cbus/set/(.*)/json', topic)
-                if address:
-                    if address.group(1).split('/')[2] in ('56'):
-                        data = json.loads(payload)
-                        self.cgate.ramp('//' + address.group(1), data['brightness'], data['transition'])
+                else:
+                    address = re.match('cbus/set/(.*)/json', topic)
+                    if address:
+                        if address.group(1).split('/')[2] in ('56'):
+                            data = json.loads(payload)
+                            self.cgate.ramp('//' + address.group(1), data['brightness'], data['transition'])
 
 CGATE_HOST = os.getenv("CGATE_HOST", "localhost")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
