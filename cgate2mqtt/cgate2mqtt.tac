@@ -148,7 +148,7 @@ class MQTTService(ClientService):
 
 CGATE_HOST = os.getenv("CGATE_HOST", "localhost")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
-MQTT_PORT = os.getenv("MQTT_PORT", 1883)
+MQTT_PORT = os.getenv("MQTT_PORT", "1883")
 MQTT_USER = os.getenv("MQTT_USER", None)
 MQTT_PASS = os.getenv("MQTT_PASS", None)
 
