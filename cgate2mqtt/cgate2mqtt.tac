@@ -93,6 +93,7 @@ class MQTTService(ClientService):
     def subscribe(self, *args):
         self.protocol.subscribe("cbus/set/#", 2 )
         self.protocol.subscribe("cbus/command", 2 )
+        self.protocol.subscribe("comfort/set", 2 )
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
@@ -124,6 +125,24 @@ class MQTTService(ClientService):
     def onPublish(self, topic, payload, qos, dup, retain, msgId):
         if topic == 'cbus/command':
             self.cgate.send(payload)
+        elif topic == 'comfort/set':
+            cmd = json.loads(payload)
+            try:
+                if cmd['action'] == 'armed_away':
+                    self.cgate.send("SECURITY ARM " + cmd['address'] + " away")
+                elif cmd['action'] == 'armed_night':
+                    self.cgate.send("SECURITY ARM " + cmd['address'] + " night")
+                elif cmd['action'] == 'armed_day':
+                    self.cgate.send("SECURITY ARM " + cmd['address'] + " day")
+                elif cmd['action'] == 'disarmed' and len(str(cmd['code']))==4:
+                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[0]))
+                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[1]))
+                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[2]))
+                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[3]))
+                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord('#'))
+            except KeyError:
+                pass
+
         else: # cbus/set/HOME/254/56/1/level
             address = re.match('cbus/set/(.*)/level', topic)
             if address:
