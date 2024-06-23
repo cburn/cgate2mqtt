@@ -134,12 +134,14 @@ class MQTTService(ClientService):
                     self.cgate.send("SECURITY ARM " + cmd['address'] + " night")
                 elif cmd['action'] == 'armed_day':
                     self.cgate.send("SECURITY ARM " + cmd['address'] + " day")
-                elif cmd['action'] == 'disarmed' and len(str(cmd['code']))==4:
-                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[0]))
-                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[1]))
-                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[2]))
-                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord(str(cmd['code'])[3]))
-                    self.cgate.send("SECURITY EMULATE_KEYPAD " + cmd['address'] + " " + ord('#'))
+                elif cmd['action'] == 'disarmed':
+                    code = str(cmd['code'])
+                    if len(code) == 4:
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[0])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[1])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[2])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[3])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord('#')}")
             except KeyError:
                 pass
 
