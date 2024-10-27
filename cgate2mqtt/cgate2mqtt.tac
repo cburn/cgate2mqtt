@@ -1,5 +1,7 @@
 import re
 import sys
+import os
+import json
 
 from twisted.application import service
 from twisted.internet import reactor
@@ -7,6 +9,7 @@ from twisted.logger import Logger
 from twisted.internet.endpoints import clientFromString
 from twisted.application.internet import ClientService
 from twisted.logger import LogLevel, ILogObserver, FilteringLogObserver, LogLevelFilterPredicate, textFileLogObserver
+
 from txcgate.service import CGateService
 import txcgate.command as command
 
@@ -15,13 +18,47 @@ from mqtt.client.factory import MQTTFactory
 log = Logger(namespace='CGate2MQTT')
 loglevel = LogLevel.info
 filterlog = True
+alarmstate = [
+    'disarmed', 
+    'armed_away', 
+    'armed_night', 
+    'armed_day'
+    ]
 
 class CGate(CGateService):
     def setMqttService(self, mqtt):
         self.mqtt_service = mqtt
         def handleMessage(message):
             log.debug(str(message))
-            if isinstance(message, command.Command):
+            if isinstance(message, command.SystemArmed):
+                self.mqtt_service.publish("comfort/target", alarmstate[message.level])
+                reactor.callLater(0.5, self.mqtt_service.publish, 
+                    "comfort/state", alarmstate[message.level])
+            elif isinstance(message, command.ExitDelay):
+                self.mqtt_service.publish("comfort/target", alarmstate[1])
+                self.mqtt_service.publish('comfort/state', 'arming')
+            elif isinstance(message, command.EntryDelay):
+                self.mqtt_service.publish("comfort/target", alarmstate[0])
+                self.mqtt_service.publish("comfort/state", 'disarming')
+            elif isinstance(message, command.AlarmOn):
+                self.mqtt_service.publish("comfort/state", 'triggered')
+            elif isinstance(message, command.Ramp):
+                self.mqtt_service.publish("cbus/status/command", str(message))
+                if message.level != None and message.address != None:
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/level',
+                        str(message.level))
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/state',
+                        '1' if message.level > 0 else '0')
+                    self.mqtt_service.publish(
+                        'cbus/status/' + message.address.lstrip('/') + '/json',
+                        json.dumps(
+                            {"brightness": message.level, 
+                            "color_mode": 'brightness', 
+                            "state": 'ON' if message.level > 0 else 'OFF',
+                            "transition": message.time}))
+            elif isinstance(message, command.Command):
                 self.mqtt_service.publish("cbus/status/command", str(message))
                 if message.level != None and message.address != None:
                     self.mqtt_service.publish(
@@ -56,11 +93,11 @@ class MQTTService(ClientService):
     def subscribe(self, *args):
         self.protocol.subscribe("cbus/set/#", 2 )
         self.protocol.subscribe("cbus/command", 2 )
-        self.protocol.setPublishHandler(self.onPublish)
+        self.protocol.subscribe("comfort/set", 2 )
 
     def connectMqtt(self, protocol):
         self.protocol=protocol
-        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=2, willRetain=True)
+        d = self.protocol.connect("CGate2Mqtt", willTopic="cbus/connected", willMessage="0", willQoS=1, willRetain=True, username=MQTT_USER, password=MQTT_PASS, keepalive=60)
         self.protocol.setWindowSize(16)
         d.addCallback(self.subscribe)
 
@@ -72,11 +109,12 @@ class MQTTService(ClientService):
             self.protocol = None
             reactor.callLater(1, retryConnect)
 
-        self.protocol.setDisconnectCallback(delayRetryConnect)
+        self.protocol.onDisconnection = delayRetryConnect
+        self.protocol.onPublish = self.onPublish
 
     def publish(self, topic, message):
         if self.protocol:
-            d = self.protocol.publish(topic=topic, qos=2, message=message, retain=True)
+            d = self.protocol.publish(topic=topic, qos=1, message=message, retain=True)
             d.addErrback(self.printError)
         else:
             log.debug('Not connected to MQTT')
@@ -87,6 +125,26 @@ class MQTTService(ClientService):
     def onPublish(self, topic, payload, qos, dup, retain, msgId):
         if topic == 'cbus/command':
             self.cgate.send(payload)
+        elif topic == 'comfort/set':
+            cmd = json.loads(payload)
+            try:
+                if cmd['action'] == 'armed_away':
+                    self.cgate.send("SECURITY ARM " + cmd['address'] + " away")
+                elif cmd['action'] == 'armed_night':
+                    self.cgate.send("SECURITY ARM " + cmd['address'] + " night")
+                elif cmd['action'] == 'armed_day':
+                    self.cgate.send("SECURITY ARM " + cmd['address'] + " day")
+                elif cmd['action'] == 'disarmed':
+                    code = str(cmd['code'])
+                    if len(code) == 4:
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[0])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[1])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[2])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord(code[3])}")
+                        self.cgate.send(f"SECURITY EMULATE_KEYPAD {cmd['address']} {ord('#')}")
+            except KeyError:
+                pass
+
         else: # cbus/set/HOME/254/56/1/level
             address = re.match('cbus/set/(.*)/level', topic)
             if address:
@@ -102,9 +160,21 @@ class MQTTService(ClientService):
                             self.cgate.on('//' + address.group(1))
                         else:
                             self.cgate.off('//' + address.group(1))
+                else:
+                    address = re.match('cbus/set/(.*)/json', topic)
+                    if address:
+                        if address.group(1).split('/')[2] in ('56'):
+                            data = json.loads(payload)
+                            self.cgate.ramp('//' + address.group(1), data['brightness'], data['transition'])
 
-STATUS_EP = clientFromString(reactor, "tcp:localhost:20025")
-COMMAND_EP = clientFromString(reactor, "tcp:localhost:20023")
+CGATE_HOST = os.getenv("CGATE_HOST", "localhost")
+MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
+MQTT_PORT = os.getenv("MQTT_PORT", "1883")
+MQTT_USER = os.getenv("MQTT_USER", None)
+MQTT_PASS = os.getenv("MQTT_PASS", None)
+
+STATUS_EP = clientFromString(reactor, "tcp:{}:20025".format(CGATE_HOST))
+COMMAND_EP = clientFromString(reactor, "tcp:{}:20023".format(CGATE_HOST))
 
 application = service.Application("cgate2mqtt")
 service.IProcess(application).processName = "cgate2mqtt"
@@ -114,7 +184,7 @@ cgate_service = CGate(STATUS_EP, COMMAND_EP)
 cgate_service.setName('cgate')
 cgate_service.setServiceParent(serviceCollection)
 
-mqtt_service = MQTTService(clientFromString(reactor, "tcp:localhost:1883"),
+mqtt_service = MQTTService(clientFromString(reactor, "tcp:{}:{}".format(MQTT_HOST, MQTT_PORT)),
     MQTTFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER))
 mqtt_service.setName('mqtt')
 mqtt_service.setServiceParent(serviceCollection)
